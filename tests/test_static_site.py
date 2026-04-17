@@ -18,7 +18,7 @@ class StaticSiteTests(unittest.TestCase):
         content = INDEX_HTML.read_text(encoding="utf-8")
         self.assertIn('<html lang="en">', content)
 
-    def test_retropixel_branding_exists(self):
+    def test_retopixel_branding_exists(self):
         content = INDEX_HTML.read_text(encoding="utf-8")
         self.assertIn("RetoPixel", content)
         self.assertIn("Pixel Login Challenge", content)
