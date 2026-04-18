@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -u
+          set -euo pipefail
 
           STATUS_CODE=$(curl -sS -o /tmp/pages-response.json -w "%{http_code}" \
             -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -43,15 +43,12 @@ jobs:
             echo "Pages site is available."
           elif [ "${STATUS_CODE}" = "404" ]; then
             echo "::error::GitHub Pages is not configured for this repository. Enable Pages in repository settings and set Source to GitHub Actions."
-            cat /tmp/pages-response.json
             exit 1
           elif [ "${STATUS_CODE}" = "403" ]; then
             echo "::error::Workflow token cannot access Pages API. Verify workflow permissions include pages: write and repository settings allow GitHub Pages deployments."
-            cat /tmp/pages-response.json
             exit 1
           else
             echo "::error::Unexpected response from Pages API (status ${STATUS_CODE})."
-            cat /tmp/pages-response.json
             exit 1
           fi
 
