@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 permissions:
   contents: read
   pages: write
@@ -25,10 +28,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate Pages API access
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+
+          STATUS_CODE=$(curl -sS -o /tmp/pages-response.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")
+
+          if [ "${STATUS_CODE}" = "200" ]; then
+            echo "Pages site is available."
+          elif [ "${STATUS_CODE}" = "404" ]; then
+            echo "::error::GitHub Pages is not configured for this repository. Enable Pages in repository settings and set Source to GitHub Actions."
+            cat /tmp/pages-response.json
+            exit 1
+          elif [ "${STATUS_CODE}" = "403" ]; then
+            echo "::error::Workflow token cannot access Pages API. Verify workflow permissions include pages: write and repository settings allow GitHub Pages deployments."
+            cat /tmp/pages-response.json
+            exit 1
+          else
+            echo "::error::Unexpected response from Pages API (status ${STATUS_CODE})."
+            cat /tmp/pages-response.json
+            exit 1
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
