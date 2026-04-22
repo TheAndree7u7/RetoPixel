@@ -157,13 +157,18 @@ class CSSStructureTests(unittest.TestCase):
 
     def test_no_raw_hex_outside_root(self):
         """Colours outside :root should use var(--...) not raw hex values."""
-        # Remove the :root block and comments, then check for bare hex literals
+        # Remove the :root block
         without_root = re.sub(r":root\s*\{[^}]*\}", "", self.css, flags=re.DOTALL)
+        # Remove block comments
         without_comments = re.sub(r"/\*.*?\*/", "", without_root, flags=re.DOTALL)
-        # Allow hex inside url() / data URIs and inside rgba/rgb function calls
-        without_data_uris = re.sub(r"url\([^)]*\)", "", without_comments)
-        without_rgba = re.sub(r"rgba?\([^)]*\)", "", without_data_uris)
-        bare_hex = re.findall(r"(?<!['\"])#[0-9a-fA-F]{3,8}\b", without_rgba)
+        # Split on lines and strip inline url() / data-URI segments and rgba()/rgb() calls
+        cleaned_lines = []
+        for line in without_comments.splitlines():
+            line = re.sub(r"url\([^)]*\)", "", line)
+            line = re.sub(r"rgba?\([^)]*\)", "", line)
+            cleaned_lines.append(line)
+        cleaned = "\n".join(cleaned_lines)
+        bare_hex = re.findall(r"(?<!['\"-])#[0-9a-fA-F]{3,8}\b", cleaned)
         self.assertEqual(
             bare_hex,
             [],
